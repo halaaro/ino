@@ -1,0 +1,11 @@
+{
+  "name": "ino",
+  "version": "0.1.0",
+  "description": "Aras Innovator client for Javascript",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "mechdude",
+  "license": "MIT"
+}
