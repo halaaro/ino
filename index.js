@@ -37,15 +37,15 @@ class InoServer {
     applyAML(aml) {
 
         const options = {
-            url: this.url + 'Server/InnovatorServer.aspx',
-            headers: {
+            url: this.url + '/Server/InnovatorServer.aspx',
+            headers: { 
                 'SOAPaction': 'ApplyAML',
                 'AUTHUSER': this.user,
                 'AUTHPASSWORD': this.password,
                 'DATABASE': this.database
             }
         }
-
+        
         const body =
             `<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
             <SOAP-ENV:Body><ApplyAML>${aml}</ApplyAML></SOAP-ENV:Body>
@@ -71,7 +71,7 @@ class InoServer {
                     resolve( 
                         JSON.parse(
                             convert.xml2json(nodes.toString(), xml2jsonOpts)    
-                        )
+                        ).Result
                     )
                 }
             }
