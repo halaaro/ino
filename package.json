@@ -7,5 +7,12 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Aaron Haley <javalight@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "md5": "^2.2.1",
+    "request": "^2.83.0",
+    "xml-js": "^1.5.1",
+    "xmldom": "^0.1.27",
+    "xpath": "0.0.24"
+  }
 }
