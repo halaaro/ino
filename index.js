@@ -1,6 +1,6 @@
 
 const md5 = require('md5')
-const request = require('request')
+const request = require('request').defaults({ jar: true })
 var xpath = require('xpath')
 var dom = require('xmldom').DOMParser
 var convert = require('xml-js');
