@@ -1,20 +1,33 @@
+const md5 = require('blueimp-md5')
+const axios = require('axios').default
+const axiosCookieJarSupport = require('@3846masa/axios-cookiejar-support').default
+var xml2js = require('xml-js').xml2js
 
-const md5 = require('md5')
-const request = require('request').defaults({ jar: true })
-var xpath = require('xpath')
-var dom = require('xmldom').DOMParser
-var convert = require('xml-js');
+const tough = require('tough-cookie');
 
-const xml2jsonOpts = { 
-    compact: true, 
-    spaces: 4, 
-    nativeType: true, 
-    attributesKey: 'attr', 
-    textKey: 'value', 
-    cdataKey: 'value', 
-    commentKey: 'value'
+axiosCookieJarSupport(axios);
+
+const cookieJar = new tough.CookieJar();
+
+
+const keys = {
+    attr: 'attr',
+    text: 'value',
+    cdata: 'value'
 }
 
+const xml2jsOpts = { 
+    compact: true, 
+    attributesKey: keys.attr, 
+    textKey: keys.text,
+    cdataKey: keys.cdata
+}
+
+const soapBody = (verb, body) => `
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+    <SOAP-ENV:Body><${ verb }>${ body }</${ verb }></SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
+`
 
 class InoServer {
 
@@ -23,63 +36,47 @@ class InoServer {
         this.database = database
     }
 
-    _tryAuth(resolve, reject) {
-        return this.applyAML(`<AML><Item type="User" action="get"><login>${this.user}</login></Item></AML>`)
-            .then(resolve).catch(reject)
-    }
-
     auth(user, password) {
         this.user = user,
-            this.password = md5(password)
-        return this._tryAuth()
+        this.password = md5(password)
+        return this.soap(
+            'ApplyAML',
+            `<AML><Item type="User" action="get" select="id"><login_name>${ this.user }</login_name></Item></AML>`)
     }
 
-    applyAML(aml) {
+    applyAML(body) { return this.soap( 'ApplyAML', body ) }
+
+    soap(verb, body) {
 
         const options = {
             url: this.url + '/Server/InnovatorServer.aspx',
+            method: 'post',
+            responseType: 'string',
             headers: { 
-                'SOAPaction': 'ApplyAML',
+                'SOAPaction': verb,
                 'AUTHUSER': this.user,
                 'AUTHPASSWORD': this.password,
                 'DATABASE': this.database
-            }
+            },
+            withCredentials: true,
+            jar: cookieJar,
+            data: soapBody( verb, body )
         }
-        
-        const body =
-            `<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
-            <SOAP-ENV:Body><ApplyAML>${aml}</ApplyAML></SOAP-ENV:Body>
-        </SOAP-ENV:Envelope>`
 
-        const p = new Promise(function (resolve, reject) {
-
-            function callback(error, response, body) {
-                if (error) {
-                    reject(error)
-                }
-                if (!error && response.statusCode == 200) {
-                    const doc = new dom().parseFromString(body)
-                    const select = xpath.useNamespaces({ 'SOAP-ENV': "http://schemas.xmlsoap.org/soap/envelope/", af: "http://www.aras.com/InnovatorFault" })
-                    var fault = select('/SOAP-ENV:Envelope/SOAP-ENV:Body/SOAP-ENV:Fault/detail', doc)
-                    if (fault.length) {
-                        //console.log(fault.toString())
-                        const detail = select('/SOAP-ENV:Envelope/SOAP-ENV:Body/SOAP-ENV:Fault/detail/af:legacy_detail/text()', doc, 1).nodeValue
-                        reject({ detail })
-                    }
-
-                    var nodes = select("//Result", doc)
-                    resolve( 
-                        JSON.parse(
-                            convert.xml2json(nodes.toString(), xml2jsonOpts)    
-                        ).Result
-                    )
-                }
+        return axios(options).then( response => {
+                
+            if (response.status !== 200) {
+                throw `request error (${ response.status }): ${ response.statusText }`
+            }
+            
+            const body = xml2js(response.data, xml2jsOpts)['SOAP-ENV:Envelope']['SOAP-ENV:Body']
+            const fault = body['SOAP-ENV:Fault']
+            if (fault != null) {
+                throw `fault: (${ fault.faultcode[keys.text] }) ${ fault.faultstring[keys.cdata] }`
             }
 
-            request.post(Object.assign(options, { body }), callback)
+            return body.Result
         })
-
-        return p
     }
 }
 
