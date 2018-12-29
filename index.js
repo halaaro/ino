@@ -22,11 +22,27 @@ const xml2jsOpts = {
   cdataKey: keys.cdata
 }
 
-const soapBody = (verb, body) => `
+const soapBody = (verb, body) => {
+  let bodyString
+  if (body.AML !== undefined || body.Item !== undefined) {
+    const js2xml = require('xml-js').js2xml
+    const tmpBody = {}
+    if (body.AML === undefined) {
+      tmpBody.AML = body
+    } else {
+      tmpBody.AML = body.AML
+    }
+
+    bodyString = js2xml(tmpBody, xml2jsOpts)
+  } else {
+    bodyString = body
+  }
+  return `
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
-    <SOAP-ENV:Body><${verb}>${body}</${verb}></SOAP-ENV:Body>
+    <SOAP-ENV:Body><${verb}>${bodyString}</${verb}></SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 `
+}
 
 class InoServer {
   constructor (url, database) {
