@@ -67,13 +67,13 @@ class InoServer {
 
     return axios(options).then(response => {
       if (response.status !== 200) {
-        throw `request error (${response.status}): ${response.statusText}`
+        throw new Error(`request error (${response.status}): ${response.statusText}`)
       }
 
       const body = xml2js(response.data, xml2jsOpts)['SOAP-ENV:Envelope']['SOAP-ENV:Body']
       const fault = body['SOAP-ENV:Fault']
       if (fault != null) {
-        throw `fault: (${fault.faultcode[keys.text]}) ${fault.faultstring[keys.cdata]}`
+        throw new Error(`fault: (${fault.faultcode[keys.text]}) ${fault.faultstring[keys.cdata]}`)
       }
 
       return body.Result
