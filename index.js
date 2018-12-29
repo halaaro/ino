@@ -89,7 +89,12 @@ class InoServer {
       const body = xml2js(response.data, xml2jsOpts)['SOAP-ENV:Envelope']['SOAP-ENV:Body']
       const fault = body['SOAP-ENV:Fault']
       if (fault != null) {
-        throw new Error(`fault: (${fault.faultcode[keys.text]}) ${fault.faultstring[keys.cdata]}`)
+        const err = new Error()
+        err.fault = { faultcode: fault.faultcode[keys.text], faultstring: fault.faultstring[keys.cdata] }
+        err.message = `fault: (${err.fault.faultcode}) ${err.fault.faultstring}`
+        err.response = response.data
+        err.body = body
+        throw err
       }
 
       return body.Result
