@@ -13,10 +13,10 @@
   "author": "mechdude",
   "license": "MIT",
   "dependencies": {
-    "@3846masa/axios-cookiejar-support": "^0.3.2",
-    "axios": "^0.17.1",
+    "@3846masa/axios-cookiejar-support": "^0.4.2",
+    "axios": "^0.18.0",
     "blueimp-md5": "^2.10.0",
-    "xml-js": "^1.5.1"
+    "xml-js": "^1.6.11"
   },
   "devDependencies": {
     "eslint": "^5.11.1",
